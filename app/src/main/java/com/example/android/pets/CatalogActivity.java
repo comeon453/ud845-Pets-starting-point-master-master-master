@@ -27,6 +27,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import com.example.android.pets.Data.PetContract;
@@ -44,6 +45,12 @@ public class CatalogActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_catalog);
+
+
+
+
+
+
 
         // Setup FAB to open EditorActivity
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -72,7 +79,7 @@ public class CatalogActivity extends AppCompatActivity {
         displayDatabaseInfo();
     }
     /*Inserts a dummy pet data*/
-    private void insertPet(){
+    private void insertDummyPet(){
 
 
         /*Create a set of content values */
@@ -91,18 +98,25 @@ public class CatalogActivity extends AppCompatActivity {
 
     }
 
+    private void deleteAllPets(){
+        getContentResolver().delete(CONTENT_URI, null, null);
+
+
+
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // User clicked on a menu option in the app bar overflow menu
         switch (item.getItemId()) {
             // Respond to a click on the "Insert dummy data" menu option
             case R.id.action_insert_dummy_data:
-                insertPet();
+                insertDummyPet();
                 displayDatabaseInfo();
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case R.id.action_delete_all_entries:
-                // Do nothing for now
+                deleteAllPets();
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -131,14 +145,16 @@ public class CatalogActivity extends AppCompatActivity {
         );*/
        Cursor cursor =  getContentResolver().query(CONTENT_URI , projection, null, null,null);
              try {
-            // Display the number of rows in the Cursor (which reflects the number of rows in the
-            // pets table in the database).
-            TextView displayView = (TextView) findViewById(R.id.text_view_pet);
-            displayView.setText("Number of rows in pets database table: " + cursor.getCount());
-        } finally {
+
+
+            PetCursorAdapter mPetCursorAdapter = new PetCursorAdapter(this, cursor, 0);
+            ListView displayView = (ListView) findViewById(R.id.pet_list_view);
+            displayView.setAdapter(mPetCursorAdapter);
+             }
+             finally {
             // Always close the cursor when you're done reading from it. This releases all its
             // resources and makes it invalid.
-            cursor.close();
+           // cursor.close();
         }
     }
 
