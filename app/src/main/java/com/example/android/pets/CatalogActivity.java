@@ -23,12 +23,17 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.support.v4.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+
 
 import com.example.android.pets.Data.PetContract;
 import com.example.android.pets.Data.PetDbHelper;
@@ -38,18 +43,17 @@ import static com.example.android.pets.Data.PetContract.PetEntry.CONTENT_URI;
 /**
  * Displays list of pets that were entered and stored in the app.
  */
-public class CatalogActivity extends AppCompatActivity {
+public class CatalogActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
+
+
+    private static final int PET_LOADER = 0;
+    PetCursorAdapter mCursorAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_catalog);
-
-
-
-
-
 
 
         // Setup FAB to open EditorActivity
@@ -62,6 +66,20 @@ public class CatalogActivity extends AppCompatActivity {
             }
         });
 
+        // Find the ListView which will be populated with the pet data
+        ListView petListView = (ListView) findViewById(R.id.pet_list_view);
+
+        // Find and set empty view on the ListView, so that it only shows when the list has 0 items.
+        View emptyView = findViewById(R.id.empty_view);
+        petListView.setEmptyView(emptyView);
+
+        //Setup an adapter to create a list of item for each row of pet data in the cursor.
+        //There is no pet data yet (until the loader finished) so pass in null for the cursor.
+        mCursorAdapter = new PetCursorAdapter(this, null, 0);
+        petListView.setAdapter(mCursorAdapter);
+
+        //kick off the loader
+        getSupportLoaderManager().initLoader(PET_LOADER, null, this);
 
     }
 
@@ -75,11 +93,12 @@ public class CatalogActivity extends AppCompatActivity {
 
 
     protected void onStart() {
-          super.onStart();
-        displayDatabaseInfo();
+        super.onStart();
+        //  displayDatabaseInfo();
     }
+
     /*Inserts a dummy pet data*/
-    private void insertDummyPet(){
+    private void insertDummyPet() {
 
 
         /*Create a set of content values */
@@ -98,9 +117,8 @@ public class CatalogActivity extends AppCompatActivity {
 
     }
 
-    private void deleteAllPets(){
+    private void deleteAllPets() {
         getContentResolver().delete(CONTENT_URI, null, null);
-
 
 
     }
@@ -112,18 +130,19 @@ public class CatalogActivity extends AppCompatActivity {
             // Respond to a click on the "Insert dummy data" menu option
             case R.id.action_insert_dummy_data:
                 insertDummyPet();
-                displayDatabaseInfo();
+                //  displayDatabaseInfo();
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case R.id.action_delete_all_entries:
                 deleteAllPets();
+                // displayDatabaseInfo();
                 return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
 
-    private void displayDatabaseInfo() {
+/*    private void displayDatabaseInfo() {
 
        String[] projection = {
                 PetContract.PetEntry._ID,
@@ -134,7 +153,7 @@ public class CatalogActivity extends AppCompatActivity {
         String selection = PetContract.PetEntry.COLUMN_PET_GENDER + " = ?";
         String[] selectionArgs = { "1" };
 
-       /* Cursor cursor = db.query(
+       *//* Cursor cursor = db.query(
                 PetContract.PetEntry.TABLE_NAME,                     // The table to query
                 projection,                               // The columns to return
                 selection,                                // The columns for the WHERE clause
@@ -142,7 +161,7 @@ public class CatalogActivity extends AppCompatActivity {
                 null,                                     // don't group the rows
                 null,                                     // don't filter by row groups
                 null                                 // The sort order
-        );*/
+        );*//*
        Cursor cursor =  getContentResolver().query(CONTENT_URI , projection, null, null,null);
              try {
 
@@ -156,6 +175,28 @@ public class CatalogActivity extends AppCompatActivity {
             // resources and makes it invalid.
            // cursor.close();
         }
+    }*/
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+
+        String[] projection = {
+                PetContract.PetEntry._ID,
+                PetContract.PetEntry.COLUMN_PET_NAME,
+                PetContract.PetEntry.COLUMN_PET_BREED
+        };
+        // create and return a CursorLoader that will take care of
+        // creating a Cursor for the data being displayed.
+        return new CursorLoader(this, PetContract.PetEntry.CONTENT_URI, projection, null, null, null);
     }
 
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        mCursorAdapter.swapCursor(data);
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        mCursorAdapter.swapCursor(null);
+    }
 }
