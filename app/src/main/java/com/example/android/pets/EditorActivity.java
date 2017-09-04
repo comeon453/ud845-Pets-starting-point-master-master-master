@@ -15,8 +15,11 @@
  */
 package com.example.android.pets;
 
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
@@ -70,11 +73,20 @@ public class EditorActivity extends AppCompatActivity {
      */
     private int mGender = 0;
 
+    private boolean isPetUpdate = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
+        //check the intent that was used to launch this activity
+        //in order to know what step to take next
+        Intent intent = getIntent();
+        Uri currentPetUri = intent.getData();
+
+        //if the current pet uri is null then we know we are not coming from a pet list item
+        //but from create new pet
 
 
         // Find all relevant views that we will need to read user input from
@@ -84,6 +96,28 @@ public class EditorActivity extends AppCompatActivity {
         mGenderSpinner = (Spinner) findViewById(R.id.spinner_gender);
 
         setupSpinner();
+
+
+        if (currentPetUri == null) {
+            //change title to new pet
+            setTitle(getString(R.string.editor_activity_title_new_pet));
+        } else {
+            setTitle(getString(R.string.editor_activity_title_edit_pet));
+
+            String[] projection = {
+                    PetContract.PetEntry._ID,
+                    PetContract.PetEntry.COLUMN_PET_NAME,
+                    PetContract.PetEntry.COLUMN_PET_BREED,
+                    PetContract.PetEntry.COLUMN_PET_GENDER
+            };
+
+            // Get readable database
+            Cursor cursor = getContentResolver().query(currentPetUri, projection, null, null, null);
+
+
+            mNameEditText.setText(cursor.getString(cursor.getColumnIndex("name")));
+            isPetUpdate = true;
+        }
     }
 
     //using the text editor, add a new pet to the database
@@ -101,17 +135,32 @@ public class EditorActivity extends AppCompatActivity {
         values.put(PetContract.PetEntry.COLUMN_PET_GENDER, mGender);
         values.put(PetContract.PetEntry.COLUMN_PET_WEIGHT, petWeight);
 
-        Uri newUri = getContentResolver().insert(CONTENT_URI, values);
 
-        // Show a toast message depending on whether or not the insertion was successful
-        if (newUri == null) {
-            // If the new content URI is null, then there was an error with insertion.
-            ToastMessage(getString(R.string.editor_insert_pet_failed));
+        Uri newUri;
+
+        if (isPetUpdate == true) {
+            int i = getContentResolver().update(CONTENT_URI, values, null, null);
+
+            if (i < 1) {
+                // If the new content URI is null, then there was an error with insertion.
+                ToastMessage("Pet could not be updated");
+            } else {
+                // Otherwise, the insertion was successful and we can display a toast.
+                ToastMessage("Pet updated");
+            }
         } else {
-            // Otherwise, the insertion was successful and we can display a toast.
-                    ToastMessage(getString(R.string.Pet_added_toast));
-        }
 
+            newUri = getContentResolver().insert(CONTENT_URI, values);
+
+            // Show a toast message depending on whether or not the insertion was successful
+            if (newUri == null) {
+                // If the new content URI is null, then there was an error with insertion.
+                ToastMessage(getString(R.string.editor_insert_pet_failed));
+            } else {
+                // Otherwise, the insertion was successful and we can display a toast.
+                ToastMessage(getString(R.string.Pet_added_toast));
+            }
+        }
 
 
     }

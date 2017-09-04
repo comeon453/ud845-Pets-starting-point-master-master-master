@@ -107,6 +107,12 @@ public class PetProvider extends ContentProvider {
             default:
                 throw new IllegalArgumentException("Cannot query unknown URI " + uri);
         }
+
+
+        // Set notification URI on the Cursor,
+        // so we know what content URI the Cursor was created for.
+        // If the data at this URI changes, then we know we need to update the Cursor.
+        cursor.setNotificationUri(getContext().getContentResolver(), uri);
         return cursor;
     }
 
@@ -144,6 +150,8 @@ public class PetProvider extends ContentProvider {
             Log.e(LOG_TAG, "Failed to insert row for " + uri);
             return null;
         }
+        // Notify all listeners that the data has changed for the pet content URI
+           getContext().getContentResolver().notifyChange(uri, null);
 
         // Once we know the ID of the new row in the table,
         // return the new URI with the ID appended to the end of it
@@ -204,6 +212,8 @@ public class PetProvider extends ContentProvider {
             return 0;
         }
 
+        // Notify all listeners that the data has changed for the pet content URI
+        getContext().getContentResolver().notifyChange(uri, null);
 
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
         return db.update(TABLE_NAME, values, selection, selectionArgs);
@@ -233,6 +243,8 @@ public class PetProvider extends ContentProvider {
     }
 
     private int deletePet(Uri uri, String selection, String[] selectionArgs) {
+        // Notify all listeners that the data has changed for the pet content URI
+        getContext().getContentResolver().notifyChange(uri, null);
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
         return db.delete(TABLE_NAME, selection, selectionArgs);
     }
